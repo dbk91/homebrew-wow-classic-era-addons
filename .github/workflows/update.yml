@@ -1,0 +1,45 @@
+name: Update Questie Cask
+
+on:
+  schedule:
+    - cron: "0 12 * * *" # Daily at noon UTC
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout tap
+        uses: actions/checkout@v3
+
+      - name: Get latest Questie release
+        id: get_release
+        run: |
+          RELEASE_JSON=$(curl -s https://api.github.com/repos/Questie/Questie/releases/latest)
+          VERSION=$(echo "$RELEASE_JSON" | grep -Po '"tag_name": "v\K[0-9.]+')
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          URL="https://github.com/Questie/Questie/releases/download/v$VERSION/Questie-v$VERSION.zip"
+          echo "URL=$URL" >> $GITHUB_OUTPUT
+
+      - name: Download and calculate sha256
+        run: |
+          curl -L "${{ steps.get_release.outputs.URL }}" -o Questie.zip
+          SHA256=$(shasum -a 256 Questie.zip | awk '{ print $1 }')
+          echo "SHA256=$SHA256" >> $GITHUB_ENV
+
+      - name: Update cask
+        run: |
+          sed -i '' "s/version \".*\"/version \"${{ steps.get_release.outputs.VERSION }}\"/" Casks/questie.rb
+          sed -i '' "s/sha256 \".*\"/sha256 \"${SHA256}\"/" Casks/questie.rb
+          sed -i '' "s|/Questie-v.*.zip|/Questie-v${{ steps.get_release.outputs.VERSION }}.zip|" Casks/questie.rb
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git diff
+          git add Casks/questie.rb
+          git commit -m "Bump Questie to v${{ steps.get_release.outputs.VERSION }}" || echo "No changes"
+          git pull --rebase
+          git push
