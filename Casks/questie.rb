@@ -7,7 +7,7 @@ cask "questie" do
   desc "Questie: The WoW Classic quest helper"
   homepage "https://github.com/Questie/Questie"
 
-  addon_dir = File.expand_path("~/Applications/World of Warcraft/_classic_era_/Interface/AddOns")
+  addon_dir = File.expand_path("/Applications/World of Warcraft/_classic_era_/Interface/AddOns")
 
   preflight do
     FileUtils.mkdir_p addon_dir unless Dir.exist?(addon_dir)
