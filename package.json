@@ -1,0 +1,12 @@
+{
+  "name": "homebrew-wow-classic-era-addons",
+  "description": "Homebrew tap for World of Warcraft Classic Era AddOns",
+  "type": "module",
+  "devDependencies": {
+    "bun-types": "latest",
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}
