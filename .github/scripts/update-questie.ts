@@ -28,6 +28,19 @@ async function updateCask(version: string, sha256: string) {
   console.log(`Updating cask file at ${caskPath}...`);
   let caskContent = await Bun.file(caskPath).text();
 
+  const match = caskContent.match(/sha256 "(.*)"/);
+  // Shouldn't happen. Appeasing the TS compiler.
+  if (match === null) {
+    console.error("Error: sha256 not found in cask file");
+    process.exit(1);
+  }
+
+  const [, currentSha] = match;
+  if (sha256 === currentSha) {
+    console.log("No new releases found. Exiting...");
+    process.exit(0);
+  }
+
   caskContent = caskContent.replace(/version ".*"/, `version "${version}"`);
   caskContent = caskContent.replace(/sha256 ".*"/, `sha256 "${sha256}"`);
 
