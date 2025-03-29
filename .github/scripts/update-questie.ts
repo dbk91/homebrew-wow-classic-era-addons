@@ -2,6 +2,8 @@ type ReleaseJson = {
   tag_name: string;
 };
 
+const GITHUB_OUTPUT = Bun.file(process.env.GITHUB_OUTPUT!);
+
 async function getLatestRelease() {
   const response = await fetch("https://api.github.com/repos/Questie/Questie/releases/latest");
   const releaseJson = (await response.json()) as ReleaseJson;
@@ -60,6 +62,7 @@ try {
   console.log(`SHA256: ${sha256}`);
 
   await updateCask(version, sha256);
+  await GITHUB_OUTPUT.write(`version=${version}\n`);
 } catch (error) {
   console.error("Error updating Questie:", error);
   process.exit(1);
