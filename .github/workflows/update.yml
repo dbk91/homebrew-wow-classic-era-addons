@@ -29,8 +29,8 @@ jobs:
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-          git checkout -b automation/update-questie-${{ steps.get_release.outputs.latest }}
-          git push --set-upstream origin automation/update-questie-${{ steps.get_release.outputs.latest }}
+          git checkout -b automation/update-questie-${{ steps.get_release.outputs.VERSION }}
+          git push --set-upstream origin automation/update-questie-${{ steps.get_release.outputs.VERSION }}
           git add Casks/*.rb
           git commit -m "Bump Questie to v${{ steps.get_release.outputs.VERSION }}"
           git pull --rebase
