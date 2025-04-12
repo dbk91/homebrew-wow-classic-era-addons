@@ -33,3 +33,4 @@ jobs:
           git commit -m "Bump Questie to v${{ steps.get_release.outputs.VERSION }}"
           git pull --rebase
           git push
+          gh pr create --title "Bump Questie to v${{ steps.get_release.outputs.VERSION }}" --body "Automated update of Questie to v${{ steps.get_release.outputs.VERSION }}" --base main --head automation/update-questie-${{ steps.get_release.outputs.VERSION }}
