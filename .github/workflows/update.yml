@@ -1,5 +1,8 @@
 name: Update Questie Cask
 
+permissions:
+  pull-requests: write
+
 on:
   schedule:
     - cron: "0 12 * * *" # Daily at noon UTC
@@ -24,8 +27,6 @@ jobs:
 
       - name: Publish Update
         if: steps.get_release.outputs.VERSION != ''
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
