@@ -1,8 +1,5 @@
 name: Update Questie Cask
 
-permissions:
-  pull-requests: write
-
 on:
   schedule:
     - cron: "0 12 * * *" # Daily at noon UTC
