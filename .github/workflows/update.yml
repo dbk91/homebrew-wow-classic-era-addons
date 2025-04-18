@@ -1,4 +1,4 @@
-name: Update Questie Cask
+name: Update WoW Classic Addons
 
 on:
   schedule:
@@ -19,20 +19,12 @@ jobs:
           bun-version: latest
 
       - name: Run update script
-        id: get_release
-        run: bun run .github/scripts/update-questie.ts
+        id: update
+        run: bun run .github/scripts/check-for-addon-updates.ts
 
-      - name: Publish Update
-        if: steps.get_release.outputs.VERSION != ''
+      - name: Create Pull Request
+        if: steps.update.outputs.has_updates == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          git checkout -b automation/update-questie-${{ steps.get_release.outputs.VERSION }}
-          git push --set-upstream origin automation/update-questie-${{ steps.get_release.outputs.VERSION }}
-          git add Casks/*.rb
-          git commit -m "Bump Questie to v${{ steps.get_release.outputs.VERSION }}"
-          git pull --rebase
-          git push
-          gh pr create --title "Bump Questie to v${{ steps.get_release.outputs.VERSION }}" --body "Automated update of Questie to v${{ steps.get_release.outputs.VERSION }}" --base main --head automation/update-questie-${{ steps.get_release.outputs.VERSION }}
+          UPDATES: ${{ steps.update.outputs.updates }}
+        run: bun run .github/scripts/create-pr.ts
