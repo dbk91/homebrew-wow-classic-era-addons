@@ -18,6 +18,7 @@ type UpdateResult = {
 };
 
 const GITHUB_OUTPUT = Bun.file(process.env.GITHUB_OUTPUT!);
+const writer = GITHUB_OUTPUT.writer();
 
 const ADDONS: Record<string, AddonInfo> = {
   questie: {
@@ -127,21 +128,23 @@ async function main() {
     if (updates.length === 0) {
       console.log("No updates were needed for any addons.");
       // Write empty values to GitHub output to indicate no updates
-      await GITHUB_OUTPUT.write("has_updates=false\n");
+      writer.write("has_updates=false\n");
     } else {
       console.log(`Updated ${updates.length} addon(s): ${updates.map((u) => `${u.name} to v${u.version}`).join(", ")}`);
 
       // Write update information to GitHub outputs
-      await GITHUB_OUTPUT.write("has_updates=true\n");
+      writer.write("has_updates=true\n");
 
       // Create a JSON string with all update information
       const updatesJson = JSON.stringify(updates);
-      await GITHUB_OUTPUT.write(`updates=${updatesJson}\n`);
+      writer.write(`updates=${updatesJson}\n`);
       console.debug(updatesJson);
     }
   } catch (error) {
     console.error("Error updating addons:", error);
     process.exit(1);
+  } finally {
+    writer.end();
   }
 }
 
