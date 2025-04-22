@@ -23,7 +23,7 @@ jobs:
         run: bun run .github/scripts/check-for-addon-updates.ts
 
       - name: Create Pull Request
-        if: steps.update.outputs.has_updates == 'true'
+        if: steps.update.outputs.has_updates
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           UPDATES: ${{ steps.update.outputs.updates }}
