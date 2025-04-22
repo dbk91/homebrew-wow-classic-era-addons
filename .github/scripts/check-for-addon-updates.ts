@@ -18,6 +18,7 @@ type UpdateResult = {
 };
 
 const GITHUB_OUTPUT = Bun.file(process.env.GITHUB_OUTPUT!);
+const writer = GITHUB_OUTPUT.writer();
 
 const ADDONS: Record<string, AddonInfo> = {
   questie: {
@@ -115,40 +116,35 @@ async function main() {
   // Process all addons concurrently
   const addonKeys = Object.keys(ADDONS);
   console.log(`Starting concurrent update process for ${addonKeys.length} addons...`);
-  
+
   try {
     // Create an array of update promises and run them concurrently
-    const updatePromises = addonKeys.map(key => updateAddon(key));
+    const updatePromises = addonKeys.map((key) => updateAddon(key));
     const results = await Promise.all(updatePromises);
-    
+
     // Filter out null results (addons that didn't need updates)
-    const updates = results.filter((result): result is UpdateResult => result !== null);
+    const updates = results.filter((result) => result !== null);
 
     if (updates.length === 0) {
       console.log("No updates were needed for any addons.");
       // Write empty values to GitHub output to indicate no updates
-      await GITHUB_OUTPUT.write("has_updates=false\n");
+      writer.write("has_updates=false\n");
     } else {
       console.log(`Updated ${updates.length} addon(s): ${updates.map((u) => `${u.name} to v${u.version}`).join(", ")}`);
 
       // Write update information to GitHub outputs
-      await GITHUB_OUTPUT.write("has_updates=true\n");
+      writer.write("has_updates=true\n");
 
       // Create a JSON string with all update information
       const updatesJson = JSON.stringify(updates);
-      await GITHUB_OUTPUT.write(`updates=${updatesJson}\n`);
-
-      // Create a comma-separated list of updated addon names and versions for PR title
-      const updatesList = updates.map((u) => `${u.name} to v${u.version}`).join(", ");
-      await GITHUB_OUTPUT.write(`updates_list=${updatesList}\n`);
-
-      // Create a space-separated list of file paths that were updated (for git add)
-      const filePaths = updates.map((u) => u.caskPath).join(" ");
-      await GITHUB_OUTPUT.write(`updated_files=${filePaths}\n`);
+      writer.write(`updates=${updatesJson}\n`);
+      console.debug(updatesJson);
     }
   } catch (error) {
     console.error("Error updating addons:", error);
     process.exit(1);
+  } finally {
+    writer.end();
   }
 }
 
