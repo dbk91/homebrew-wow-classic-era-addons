@@ -1,6 +1,6 @@
 cask "restedxp" do
-  version "4.7.1"
-  sha256 "445d80d4fcee41c01c6d82c5c997e79551f2b848d6369d5747aba984d048a79b"
+  version "4.7.3"
+  sha256 "0019dfc4b32d63c1392aa264aed2253c1e0c2fb09216f8e2cc269bbfb8bb49b5"
 
   url "https://github.com/RestedXP/RXPGuides/releases/download/v#{version}/RXPGuides-v#{version}-classic.zip"
   name "RestedXP"
