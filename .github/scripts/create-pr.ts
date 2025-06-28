@@ -19,13 +19,13 @@ async function createPullRequest() {
     process.exit(0);
   }
 
+  const timestamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\..+/, "");
+  const addonKeys = updates.map((u) => u.key).join("-");
+  const branchName = `automation/update-${addonKeys}-${timestamp}`;
+
   try {
     await Bun.$`git config user.name "GitHub Actions"`;
     await Bun.$`git config user.email "actions@github.com"`;
-
-    const timestamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\..+/, "");
-    const addonKeys = updates.map((u) => u.key).join("-");
-    const branchName = `automation/update-${addonKeys}-${timestamp}`;
 
     console.log(`Creating branch: ${branchName}`);
 
@@ -70,7 +70,7 @@ async function createPullRequest() {
   }
 
   try {
-    await Bun.$`gh pr merge --auto --squash`;
+    await Bun.$`gh pr merge --auto --squash ${branchName}`;
     console.log("Auto-merge enabled. PR will merge automatically when checks pass.");
   } catch (mergeError) {
     console.warn("Failed to enable auto-merge:", mergeError);
