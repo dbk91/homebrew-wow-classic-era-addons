@@ -10,7 +10,6 @@ type GitHubPR = {
   headRefName: string;
 };
 
-// Get environment variables
 const updatesJson = process.env.UPDATES || "[]";
 const updates: UpdateInfo[] = JSON.parse(updatesJson);
 
@@ -21,21 +20,17 @@ async function createPullRequest() {
   }
 
   try {
-    // Configure git
     await Bun.$`git config user.name "GitHub Actions"`;
     await Bun.$`git config user.email "actions@github.com"`;
 
-    // Generate branch name with addon keys and timestamp
     const timestamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\..+/, "");
     const addonKeys = updates.map((u) => u.key).join("-");
     const branchName = `automation/update-${addonKeys}-${timestamp}`;
 
     console.log(`Creating branch: ${branchName}`);
 
-    // Create and checkout new branch
     await Bun.$`git checkout -b ${branchName}`;
 
-    // Add all updated files
     const updatedFiles = updates.map((u) => u.caskPath);
     console.log(`Adding files: ${updatedFiles.join(", ")}`);
 
@@ -43,19 +38,16 @@ async function createPullRequest() {
       await Bun.$`git add ${file}`;
     }
 
-    // Create commit message from updates
     const updatesList = updates.map((u) => `${u.name} to v${u.version}`).join(", ");
     const commitMessage = `Bump ${updatesList}`;
 
     console.log(`Creating commit: ${commitMessage}`);
     await Bun.$`git commit -m ${commitMessage}`;
 
-    // Check for existing PRs with the same updates
     console.log("Checking for existing pull requests...");
     const existingPRs = await Bun.$`gh pr list --state open --base main --json title,headRefName`.text();
     const prs: GitHubPR[] = JSON.parse(existingPRs);
 
-    // Check if there's already a PR with the same commit message (same updates)
     const existingPR = prs.find((pr: GitHubPR) => pr.title === commitMessage);
     if (existingPR) {
       console.log(`Pull request already exists with title: "${commitMessage}"`);
@@ -64,11 +56,9 @@ async function createPullRequest() {
       process.exit(0);
     }
 
-    // Push to remote
     console.log("Pushing to remote...");
     await Bun.$`git push --set-upstream origin ${branchName}`;
 
-    // Create PR
     console.log("Creating pull request...");
     const prBody = `Automated update of: ${updatesList}`;
 
@@ -79,7 +69,6 @@ async function createPullRequest() {
     process.exit(1);
   }
 
-  // Enable auto-merge
   try {
     await Bun.$`gh pr merge --auto --squash`;
     console.log("Auto-merge enabled. PR will merge automatically when checks pass.");
