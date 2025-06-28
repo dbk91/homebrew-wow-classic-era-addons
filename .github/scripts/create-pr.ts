@@ -5,6 +5,11 @@ type UpdateInfo = {
   caskPath: string;
 };
 
+type GitHubPR = {
+  title: string;
+  headRefName: string;
+};
+
 const updatesJson = process.env.UPDATES || "[]";
 const updates: UpdateInfo[] = JSON.parse(updatesJson);
 
@@ -14,13 +19,14 @@ async function createPullRequest() {
     process.exit(0);
   }
 
+  const timestamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\..+/, "");
+  const addonKeys = updates.map((u) => u.key).join("-");
+  const branchName = `automation/update-${addonKeys}-${timestamp}`;
+  let prNumber: number;
+
   try {
     await Bun.$`git config user.name "GitHub Actions"`;
     await Bun.$`git config user.email "actions@github.com"`;
-
-    const timestamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\..+/, "");
-    const addonKeys = updates.map((u) => u.key).join("-");
-    const branchName = `automation/update-${addonKeys}-${timestamp}`;
 
     console.log(`Creating branch: ${branchName}`);
 
@@ -39,18 +45,42 @@ async function createPullRequest() {
     console.log(`Creating commit: ${commitMessage}`);
     await Bun.$`git commit -m ${commitMessage}`;
 
+    console.log("Checking for existing pull requests...");
+    const existingPRs = await Bun.$`gh pr list --state open --base main --json title,headRefName`.text();
+    const prs: GitHubPR[] = JSON.parse(existingPRs);
+
+    const existingPR = prs.find((pr: GitHubPR) => pr.title === commitMessage);
+    if (existingPR) {
+      console.log(`Pull request already exists with title: "${commitMessage}"`);
+      console.log(`Existing PR branch: ${existingPR.headRefName}`);
+      console.log("Skipping PR creation to avoid duplicates.");
+      process.exit(0);
+    }
+
     console.log("Pushing to remote...");
     await Bun.$`git push --set-upstream origin ${branchName}`;
 
     console.log("Creating pull request...");
     const prBody = `Automated update of: ${updatesList}`;
 
-    await Bun.$`gh pr create --title ${commitMessage} --body ${prBody} --base main --head ${branchName}`;
+    const prResult = await Bun.$`gh pr create --title ${commitMessage} --body ${prBody} --base main --head ${branchName} --json number`.text();
+    const prData = JSON.parse(prResult);
+    prNumber = prData.number;
 
-    console.log("Pull request created successfully!");
+    console.log(`Pull request #${prNumber} created successfully!`);
   } catch (error) {
     console.error("Error creating pull request:", error);
     process.exit(1);
+  }
+
+  // Enable auto-merge
+  try {
+    await Bun.$`gh pr merge --auto --squash ${prNumber}`;
+    console.log("Auto-merge enabled. PR will merge automatically when checks pass.");
+  } catch (mergeError) {
+    console.warn("Failed to enable auto-merge:", mergeError);
+    console.log("PR created but auto-merge could not be enabled. Manual merge may be required.");
+    // Don't exit with error since PR was created successfully
   }
 }
 
