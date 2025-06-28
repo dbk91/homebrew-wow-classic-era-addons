@@ -54,11 +54,20 @@ async function createPullRequest() {
     const prBody = `Automated update of: ${updatesList}`;
 
     await Bun.$`gh pr create --title ${commitMessage} --body ${prBody} --base main --head ${branchName}`;
-
     console.log("Pull request created successfully!");
   } catch (error) {
     console.error("Error creating pull request:", error);
     process.exit(1);
+  }
+
+  // Enable auto-merge
+  try {
+    await Bun.$`gh pr merge --auto --squash`;
+    console.log("Auto-merge enabled. PR will merge automatically when checks pass.");
+  } catch (mergeError) {
+    console.warn("Failed to enable auto-merge:", mergeError);
+    console.log("PR created but auto-merge could not be enabled. Manual merge may be required.");
+    // Don't exit with error since PR was created successfully
   }
 }
 
