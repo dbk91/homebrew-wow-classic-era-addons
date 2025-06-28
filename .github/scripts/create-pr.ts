@@ -5,6 +5,11 @@ type UpdateInfo = {
   caskPath: string;
 };
 
+type GitHubPR = {
+  title: string;
+  headRefName: string;
+};
+
 // Get environment variables
 const updatesJson = process.env.UPDATES || "[]";
 const updates: UpdateInfo[] = JSON.parse(updatesJson);
@@ -44,6 +49,20 @@ async function createPullRequest() {
 
     console.log(`Creating commit: ${commitMessage}`);
     await Bun.$`git commit -m ${commitMessage}`;
+
+    // Check for existing PRs with the same updates
+    console.log("Checking for existing pull requests...");
+    const existingPRs = await Bun.$`gh pr list --state open --base main --json title,headRefName`.text();
+    const prs: GitHubPR[] = JSON.parse(existingPRs);
+
+    // Check if there's already a PR with the same commit message (same updates)
+    const existingPR = prs.find((pr: GitHubPR) => pr.title === commitMessage);
+    if (existingPR) {
+      console.log(`Pull request already exists with title: "${commitMessage}"`);
+      console.log(`Existing PR branch: ${existingPR.headRefName}`);
+      console.log("Skipping PR creation to avoid duplicates.");
+      process.exit(0);
+    }
 
     // Push to remote
     console.log("Pushing to remote...");
