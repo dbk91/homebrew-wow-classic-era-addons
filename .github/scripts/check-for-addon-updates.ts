@@ -1,6 +1,4 @@
-type ReleaseJson = {
-  tag_name: string;
-};
+import { Octokit } from "@octokit/rest";
 
 type AddonInfo = {
   name: string;
@@ -20,6 +18,11 @@ type UpdateResult = {
 const GITHUB_OUTPUT = Bun.file(process.env.GITHUB_OUTPUT!);
 const writer = GITHUB_OUTPUT.writer();
 
+// Initialize Octokit (GitHub SDK)
+const octokit = new Octokit({
+  auth: process.env.GITHUB_TOKEN, // Optional, for higher rate limits
+});
+
 const ADDONS: Record<string, AddonInfo> = {
   questie: {
     name: "Questie",
@@ -37,13 +40,30 @@ const ADDONS: Record<string, AddonInfo> = {
 };
 
 async function getLatestRelease(addonInfo: AddonInfo) {
-  const response = await fetch(`https://api.github.com/repos/${addonInfo.repo}/releases/latest`);
-  const releaseJson = (await response.json()) as ReleaseJson;
-  const version = releaseJson.tag_name.replace("v", "");
-  const suffix = addonInfo.filenameSuffix || "";
-  const url = `https://github.com/${addonInfo.repo}/releases/download/v${version}/${addonInfo.artifactName}-v${version}${suffix}.zip`;
+  console.log(`Fetching latest release for ${addonInfo.repo}...`);
 
-  return { version, url };
+  // Parse owner and repo from the repo string
+  const [owner, repo] = addonInfo.repo.split("/");
+
+  if (!owner || !repo) {
+    throw new Error(`Invalid repo format: ${addonInfo.repo}. Expected format: owner/repo`);
+  }
+
+  try {
+    const { data: release } = await octokit.rest.repos.getLatestRelease({
+      owner,
+      repo,
+    });
+
+    const version = release.tag_name.replace("v", "");
+    const suffix = addonInfo.filenameSuffix || "";
+    const url = `https://github.com/${addonInfo.repo}/releases/download/v${version}/${addonInfo.artifactName}-v${version}${suffix}.zip`;
+
+    return { version, url };
+  } catch (error) {
+    console.error(`Failed to fetch latest release for ${addonInfo.repo}:`, error);
+    throw error;
+  }
 }
 
 async function downloadAndCalculateSha256(url: string): Promise<string> {
