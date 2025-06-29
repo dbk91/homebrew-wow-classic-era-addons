@@ -6,6 +6,9 @@
     "bun-types": "latest",
     "@types/bun": "latest"
   },
+  "dependencies": {
+    "@octokit/rest": "^20.0.2"
+  },
   "peerDependencies": {
     "typescript": "^5"
   }
