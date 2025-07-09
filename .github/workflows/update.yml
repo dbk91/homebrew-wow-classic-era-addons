@@ -23,7 +23,7 @@ jobs:
 
       - name: Run update script
         id: update
-        run: bun run .github/scripts/check-for-addon-updates.ts
+        run: cd ./github/scripts && bun install && bun run ./check-for-addon-updates.ts
 
       - name: Create Pull Request
         env:
