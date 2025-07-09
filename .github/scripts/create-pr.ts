@@ -44,8 +44,8 @@ async function createPullRequest() {
 
     console.log("Checking for existing pull requests...");
     const existingPRs = await octokit.rest.pulls.list({
-      owner: "dbk91",
-      repo: "homebrew-wow-classic-era-addons",
+      owner: process.env.GITHUB_REPOSITORY_OWNER!,
+      repo: process.env.GITHUB_REPOSITORY?.split("/")[1]!,
       state: "open",
       base: "main",
     });
@@ -65,8 +65,8 @@ async function createPullRequest() {
     const prBody = `Automated update of: ${updatesList}`;
 
     const pr = await octokit.rest.pulls.create({
-      owner: "dbk91",
-      repo: "homebrew-wow-classic-era-addons",
+      owner: process.env.GITHUB_REPOSITORY_OWNER!,
+      repo: process.env.GITHUB_REPOSITORY?.split("/")[1]!,
       title: commitMessage,
       body: prBody,
       head: branchName,
