@@ -1,13 +1,10 @@
+import { octokit } from "./shared/octokit";
+
 type UpdateInfo = {
   key: string;
   name: string;
   version: string;
   caskPath: string;
-};
-
-type GitHubPR = {
-  title: string;
-  headRefName: string;
 };
 
 const updatesJson = process.env.UPDATES || "[]";
@@ -46,13 +43,17 @@ async function createPullRequest() {
     await Bun.$`git commit -m ${commitMessage}`;
 
     console.log("Checking for existing pull requests...");
-    const existingPRs = await Bun.$`gh pr list --state open --base main --json title,headRefName`.text();
-    const prs: GitHubPR[] = JSON.parse(existingPRs);
+    const existingPRs = await octokit.rest.pulls.list({
+      owner: "dbk91",
+      repo: "homebrew-wow-classic-era-addons",
+      state: "open",
+      base: "main",
+    });
 
-    const existingPR = prs.find((pr: GitHubPR) => pr.title === commitMessage);
+    const existingPR = existingPRs.data.find((pr) => pr.title === commitMessage);
     if (existingPR) {
       console.log(`Pull request already exists with title: "${commitMessage}"`);
-      console.log(`Existing PR branch: ${existingPR.headRefName}`);
+      console.log(`Existing PR branch: ${existingPR.head.ref}`);
       console.log("Skipping PR creation to avoid duplicates.");
       process.exit(0);
     }
@@ -63,9 +64,15 @@ async function createPullRequest() {
     console.log("Creating pull request...");
     const prBody = `Automated update of: ${updatesList}`;
 
-    const prResult = await Bun.$`gh pr create --title ${commitMessage} --body ${prBody} --base main --head ${branchName} --json number`.text();
-    const prData = JSON.parse(prResult);
-    prNumber = prData.number;
+    const pr = await octokit.rest.pulls.create({
+      owner: "dbk91",
+      repo: "homebrew-wow-classic-era-addons",
+      title: commitMessage,
+      body: prBody,
+      head: branchName,
+      base: "main",
+    });
+    prNumber = pr.data.number;
 
     console.log(`Pull request #${prNumber} created successfully!`);
   } catch (error) {

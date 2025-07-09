@@ -1,4 +1,4 @@
-import { Octokit } from "@octokit/rest";
+import { octokit } from "./shared/octokit";
 
 type AddonInfo = {
   name: string;
@@ -17,11 +17,6 @@ type UpdateResult = {
 
 const GITHUB_OUTPUT = Bun.file(process.env.GITHUB_OUTPUT!);
 const writer = GITHUB_OUTPUT.writer();
-
-// Initialize Octokit (GitHub SDK)
-const octokit = new Octokit({
-  auth: process.env.GITHUB_TOKEN, // Optional, for higher rate limits
-});
 
 const ADDONS: Record<string, AddonInfo> = {
   questie: {
