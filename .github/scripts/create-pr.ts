@@ -22,25 +22,70 @@ async function createPullRequest() {
   let prNumber: number;
 
   try {
-    await Bun.$`git config user.name "GitHub Actions"`;
-    await Bun.$`git config user.email "actions@github.com"`;
-
     console.log(`Creating branch: ${branchName}`);
+    const { data: mainRef } = await octokit.rest.git.getRef({
+      owner: process.env.GITHUB_REPOSITORY_OWNER!,
+      repo: process.env.GITHUB_REPOSITORY?.split("/")[1]!,
+      ref: "heads/main",
+    });
+    const mainSha = mainRef.object.sha;
 
-    await Bun.$`git checkout -b ${branchName}`;
+    await octokit.rest.git.createRef({
+      owner: process.env.GITHUB_REPOSITORY_OWNER!,
+      repo: process.env.GITHUB_REPOSITORY?.split("/")[1]!,
+      ref: `refs/heads/${branchName}`,
+      sha: mainSha,
+    });
 
     const updatedFiles = updates.map((u) => u.caskPath);
     console.log(`Adding files: ${updatedFiles.join(", ")}`);
 
+    const { data: mainCommit } = await octokit.rest.git.getCommit({
+      owner: process.env.GITHUB_REPOSITORY_OWNER!,
+      repo: process.env.GITHUB_REPOSITORY?.split("/")[1]!,
+      commit_sha: mainSha,
+    });
+    const baseTree = mainCommit.tree.sha;
+
+    const blobs = [];
     for (const file of updatedFiles) {
-      await Bun.$`git add ${file}`;
+      const content = await Bun.file(file).text();
+      const { data: blob } = await octokit.rest.git.createBlob({
+        owner: process.env.GITHUB_REPOSITORY_OWNER!,
+        repo: process.env.GITHUB_REPOSITORY?.split("/")[1]!,
+        content,
+        encoding: "utf-8",
+      });
+      blobs.push({ path: file, sha: blob.sha });
     }
+
+    const { data: newTree } = await octokit.rest.git.createTree({
+      owner: process.env.GITHUB_REPOSITORY_OWNER!,
+      repo: process.env.GITHUB_REPOSITORY?.split("/")[1]!,
+      base_tree: baseTree,
+      tree: blobs.map(({ path, sha }) => ({ path, mode: "100644", type: "blob", sha })),
+    });
 
     const updatesList = updates.map((u) => `${u.name} to v${u.version}`).join(", ");
     const commitMessage = `Bump ${updatesList}`;
+    const { data: newCommit } = await octokit.rest.git.createCommit({
+      owner: process.env.GITHUB_REPOSITORY_OWNER!,
+      repo: process.env.GITHUB_REPOSITORY?.split("/")[1]!,
+      message: commitMessage,
+      tree: newTree.sha,
+      parents: [mainSha],
+      author: {
+        name: "GitHub Actions",
+        email: "actions@github.com",
+      },
+    });
 
-    console.log(`Creating commit: ${commitMessage}`);
-    await Bun.$`git commit -m ${commitMessage}`;
+    await octokit.rest.git.updateRef({
+      owner: process.env.GITHUB_REPOSITORY_OWNER!,
+      repo: process.env.GITHUB_REPOSITORY?.split("/")[1]!,
+      ref: `heads/${branchName}`,
+      sha: newCommit.sha,
+    });
 
     console.log("Checking for existing pull requests...");
     const existingPRs = await octokit.rest.pulls.list({
@@ -65,8 +110,8 @@ async function createPullRequest() {
     const prBody = `Automated update of: ${updatesList}`;
 
     const pr = await octokit.rest.pulls.create({
-      owner: "dbk91",
-      repo: "homebrew-wow-classic-era-addons",
+      owner: process.env.GITHUB_REPOSITORY_OWNER!,
+      repo: process.env.GITHUB_REPOSITORY?.split("/")[1]!,
       title: commitMessage,
       body: prBody,
       head: branchName,
