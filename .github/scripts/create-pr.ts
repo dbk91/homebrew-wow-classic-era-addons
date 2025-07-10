@@ -87,6 +87,25 @@ async function createPullRequest() {
       sha: newCommit.sha,
     });
 
+    // Poll until the branch is available via the API (max 10s)
+    let branchReady = false;
+    for (let i = 0; i < 20; i++) { // 20 x 500ms = 10s
+      try {
+        await octokit.rest.git.getRef({
+          owner: process.env.GITHUB_REPOSITORY_OWNER!,
+          repo: process.env.GITHUB_REPOSITORY?.split("/")[1]!,
+          ref: `heads/${branchName}`,
+        });
+        branchReady = true;
+        break;
+      } catch (e) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
+    }
+    if (!branchReady) {
+      throw new Error(`Branch ${branchName} not available after waiting.`);
+    }
+
     console.log("Checking for existing pull requests...");
     const existingPRs = await octokit.rest.pulls.list({
       owner: process.env.GITHUB_REPOSITORY_OWNER!,
