@@ -65,8 +65,8 @@ async function createPullRequest() {
     const prBody = `Automated update of: ${updatesList}`;
 
     const pr = await octokit.rest.pulls.create({
-      owner: process.env.GITHUB_REPOSITORY_OWNER!,
-      repo: process.env.GITHUB_REPOSITORY?.split("/")[1]!,
+      owner: "dbk91",
+      repo: "homebrew-wow-classic-era-addons",
       title: commitMessage,
       body: prBody,
       head: branchName,
