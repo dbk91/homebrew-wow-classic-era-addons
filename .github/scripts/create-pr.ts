@@ -63,9 +63,14 @@ async function createPullRequest() {
     console.log("Creating pull request...");
     const prBody = `Automated update of: ${updatesList}`;
 
-    const prResult = await Bun.$`gh pr create --title ${commitMessage} --body ${prBody} --base main --head ${branchName} --json number`.text();
-    const prData = JSON.parse(prResult);
-    prNumber = prData.number;
+    const prResult = await Bun.$`gh pr create --title ${commitMessage} --body ${prBody} --base main --head ${branchName}`.text();
+    // Extract PR number from the output (e.g., "https://github.com/owner/repo/pull/123")
+    const [, prNumberMatch] = prResult.match(/\/pull\/(\d+)/) ?? [];
+    if (prNumberMatch && prNumberMatch !== undefined) {
+      prNumber = parseInt(prNumberMatch, 10);
+    } else {
+      throw new Error("Could not extract PR number from gh pr create output: " + prResult);
+    }
 
     console.log(`Pull request #${prNumber} created successfully!`);
   } catch (error) {
