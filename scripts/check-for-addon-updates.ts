@@ -78,7 +78,7 @@ async function downloadAndCalculateSha256(url: string): Promise<string> {
 }
 
 async function updateCask(addonInfo: AddonInfo, version: string, sha256: string) {
-  const caskPath = `${import.meta.dir}/../../Casks/${addonInfo.caskName}.rb`;
+  const caskPath = `${import.meta.dir}/../Casks/${addonInfo.caskName}.rb`;
 
   console.log(`Updating cask file at ${caskPath}...`);
   let caskContent = await Bun.file(caskPath).text();

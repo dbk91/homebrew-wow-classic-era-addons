@@ -24,16 +24,17 @@ brew install dbk91/tap/wow-classic-era-addons/questie
 
 ## Development
 
-This repository uses the GitHub JavaScript SDK to automatically check for addon updates. The update script is located at `.github/scripts/check-for-addon-updates.ts` and runs with Bun.
+This repository uses the GitHub JavaScript SDK to automatically check for addon updates. The update script is located at `scripts/check-for-addon-updates.ts` and runs with Bun.
 
 ### Running the Update Script Locally
 
 ```bash
 # Install dependencies
+cd scripts
 bun install
 
 # Run the update script
-bun run .github/scripts/check-for-addon-updates.ts
+bun run check-for-addon-updates.ts
 ```
 
 For higher GitHub API rate limits, you can optionally set a `GITHUB_TOKEN` environment variable with a personal access token.
