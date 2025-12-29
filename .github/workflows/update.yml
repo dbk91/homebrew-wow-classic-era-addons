@@ -23,7 +23,8 @@ jobs:
 
       - name: Run update script
         id: update
-        run: bun run .github/scripts/check-for-addon-updates.ts
+        working-directory: scripts
+        run: bun run check-for-addon-updates.ts
 
       - name: Create Pull Request
         env:
@@ -31,4 +32,5 @@ jobs:
           UPDATES: ${{ steps.update.outputs.updates }}
           HAS_UPDATES: ${{ steps.update.outputs.has_updates == 'true' }}
         if: env.HAS_UPDATES
-        run: bun run .github/scripts/create-pr.ts
+        working-directory: scripts
+        run: bun run create-pr.ts
