@@ -26,6 +26,7 @@ jobs:
         run: bun run .github/scripts/check-for-addon-updates.ts
 
       - name: Create Pull Request
+        working-directory: ${{ github.workspace }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           UPDATES: ${{ steps.update.outputs.updates }}
