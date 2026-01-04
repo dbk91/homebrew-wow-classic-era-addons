@@ -1,3 +1,5 @@
+import { resolve } from "node:path";
+
 type UpdateInfo = {
   key: string;
   name: string;
@@ -25,7 +27,7 @@ async function createPullRequest() {
   let prNumber: number;
 
   try {
-    const repoRoot = `${import.meta.dir}/..`;
+    const repoRoot = resolve(import.meta.dir, "..");
     process.chdir(repoRoot);
     console.log(`Changed working directory to: ${process.cwd()}`);
 
