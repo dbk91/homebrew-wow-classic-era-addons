@@ -1,3 +1,5 @@
+import { resolve } from "node:path";
+
 type UpdateInfo = {
   key: string;
   name: string;
@@ -25,6 +27,10 @@ async function createPullRequest() {
   let prNumber: number;
 
   try {
+    const repoRoot = resolve(import.meta.dir, "..");
+    process.chdir(repoRoot);
+    console.log(`Changed working directory to: ${process.cwd()}`);
+
     await Bun.$`git config user.name "GitHub Actions"`;
     await Bun.$`git config user.email "actions@github.com"`;
 
