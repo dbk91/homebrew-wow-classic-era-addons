@@ -12,6 +12,7 @@ type GitHubPR = {
 
 const updatesJson = process.env.UPDATES || "[]";
 const updates: UpdateInfo[] = JSON.parse(updatesJson);
+const repoRoot = import.meta.dir + "/../..";
 
 async function createPullRequest() {
   if (updates.length === 0) {
@@ -25,28 +26,28 @@ async function createPullRequest() {
   let prNumber: number;
 
   try {
-    await Bun.$`git config user.name "GitHub Actions"`;
-    await Bun.$`git config user.email "actions@github.com"`;
+    await Bun.$`cd ${repoRoot} && git config user.name "GitHub Actions"`;
+    await Bun.$`cd ${repoRoot} && git config user.email "actions@github.com"`;
 
     console.log(`Creating branch: ${branchName}`);
 
-    await Bun.$`git checkout -b ${branchName}`;
+    await Bun.$`cd ${repoRoot} && git checkout -b ${branchName}`;
 
     const updatedFiles = updates.map((u) => u.caskPath);
     console.log(`Adding files: ${updatedFiles.join(", ")}`);
 
     for (const file of updatedFiles) {
-      await Bun.$`git add ${file}`;
+      await Bun.$`cd ${repoRoot} && git add ${file}`;
     }
 
     const updatesList = updates.map((u) => `${u.name} to v${u.version}`).join(", ");
     const commitMessage = `Bump ${updatesList}`;
 
     console.log(`Creating commit: ${commitMessage}`);
-    await Bun.$`git commit -m ${commitMessage}`;
+    await Bun.$`cd ${repoRoot} && git commit -m ${commitMessage}`;
 
     console.log("Checking for existing pull requests...");
-    const existingPRs = await Bun.$`gh pr list --state open --base main --json title,headRefName`.text();
+    const existingPRs = await Bun.$`cd ${repoRoot} && gh pr list --state open --base main --json title,headRefName`.text();
     const prs: GitHubPR[] = JSON.parse(existingPRs);
 
     const existingPR = prs.find((pr: GitHubPR) => pr.title === commitMessage);
@@ -58,12 +59,12 @@ async function createPullRequest() {
     }
 
     console.log("Pushing to remote...");
-    await Bun.$`git push --set-upstream origin ${branchName}`;
+    await Bun.$`cd ${repoRoot} && git push --set-upstream origin ${branchName}`;
 
     console.log("Creating pull request...");
     const prBody = `Automated update of: ${updatesList}`;
 
-    const prResult = await Bun.$`gh pr create --title ${commitMessage} --body ${prBody} --base main --head ${branchName}`.text();
+    const prResult = await Bun.$`cd ${repoRoot} && gh pr create --title ${commitMessage} --body ${prBody} --base main --head ${branchName}`.text();
     // Extract PR number from the output (e.g., "https://github.com/owner/repo/pull/123")
     const [, prNumberMatch] = prResult.match(/\/pull\/(\d+)/) ?? [];
     if (prNumberMatch && prNumberMatch !== undefined) {
@@ -80,7 +81,7 @@ async function createPullRequest() {
 
   // Enable auto-merge
   try {
-    await Bun.$`gh pr merge --auto --squash ${prNumber}`;
+    await Bun.$`cd ${repoRoot} && gh pr merge --auto --squash ${prNumber}`;
     console.log("Auto-merge enabled. PR will merge automatically when checks pass.");
   } catch (mergeError) {
     console.warn("Failed to enable auto-merge:", mergeError);
