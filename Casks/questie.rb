@@ -1,6 +1,6 @@
 cask "questie" do
-  version "11.29.3"
-  sha256 "f08b833e7dc3102ed3d825c70743041b531eab04344a9ed5f4367931433e5380"
+  version "11.29.4"
+  sha256 "e34bc3436e65d53c9f9d5e2fac4f6963653f06dbf994c69a9711fe1d54054ebe"
 
   url "https://github.com/Questie/Questie/releases/download/v#{version}/Questie-v#{version}.zip"
   name "Questie"
